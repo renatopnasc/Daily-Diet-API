@@ -50,6 +50,8 @@ export async function mealRoutes(app: FastifyInstance) {
 
     const meal = await knex('meals').where('id', id).first()
 
+    if (!meal) throw new Error()
+
     await knex('meals')
       .where({ user_id, id })
       .update({
