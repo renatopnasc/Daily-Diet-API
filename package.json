@@ -23,6 +23,7 @@
   "devDependencies": {
     "@rocketseat/eslint-config": "^2.2.2",
     "@types/bcryptjs": "^2.4.6",
+    "@types/knex": "^0.16.1",
     "eslint": "^8.57.0"
   }
 }
