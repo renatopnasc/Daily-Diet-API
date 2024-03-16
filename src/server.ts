@@ -8,7 +8,7 @@ app.register(userRoutes, {
   prefix: 'users',
 })
 
-app.register(mealRoutes, { prefix: 'meal' })
+app.register(mealRoutes, { prefix: 'meal/:user_id' })
 
 app
   .listen({

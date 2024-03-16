@@ -3,23 +3,20 @@ import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { knex } from '../database'
 import { randomUUID } from 'node:crypto'
+import { checkUserExists } from '../middlewares/checkUserExists'
 
 export async function mealRoutes(app: FastifyInstance) {
-  app.post('/:user_id', async (request, reply) => {
+  app.post('/', { preHandler: [checkUserExists] }, async (request, reply) => {
     const createMealBodySchema = z.object({
       name: z.string(),
       description: z.string(),
       is_part_of_diet: z.boolean(),
-    })
-
-    const createRequestParamsSchema = z.object({
       user_id: z.string().uuid(),
     })
 
     const meal = createMealBodySchema.parse(request.body)
-    const { user_id } = createRequestParamsSchema.parse(request.params)
 
-    const { name, description, is_part_of_diet } = meal
+    const { name, description, is_part_of_diet, user_id } = meal
 
     await knex('meals').insert({
       id: randomUUID(),
@@ -32,9 +29,8 @@ export async function mealRoutes(app: FastifyInstance) {
     return reply.status(201).send()
   })
 
-  app.put('/:user_id/:id', async (request, reply) => {
+  app.put('/:id', { preHandler: [checkUserExists] }, async (request, reply) => {
     const createRequestParamsSchema = z.object({
-      user_id: z.string().uuid(),
       id: z.string().uuid(),
     })
 
@@ -42,11 +38,12 @@ export async function mealRoutes(app: FastifyInstance) {
       name: z.string().nullable().default(null),
       description: z.string().nullable().default(null),
       is_part_of_diet: z.boolean(),
+      user_id: z.string().uuid(),
     })
 
-    const { name, description, is_part_of_diet } =
+    const { name, description, is_part_of_diet, user_id } =
       createUpdateMealBodySchema.parse(request.body)
-    const { id, user_id } = createRequestParamsSchema.parse(request.params)
+    const { id } = createRequestParamsSchema.parse(request.params)
 
     const meal = await knex('meals').where('id', id).first()
 
@@ -64,16 +61,24 @@ export async function mealRoutes(app: FastifyInstance) {
     return reply.status(201).send()
   })
 
-  app.delete('/:user_id/:id', async (request, reply) => {
-    const createRequestParamsSchema = z.object({
-      user_id: z.string(),
-      id: z.string(),
-    })
+  app.delete(
+    '/:id',
+    { preHandler: [checkUserExists] },
+    async (request, reply) => {
+      const createRequestParamsSchema = z.object({
+        id: z.string(),
+      })
 
-    const { user_id, id } = createRequestParamsSchema.parse(request.params)
+      const createMealBodySchema = z.object({
+        user_id: z.string().uuid(),
+      })
 
-    await knex('meals').where({ user_id, id }).first().delete()
+      const { id } = createRequestParamsSchema.parse(request.params)
+      const { user_id } = createMealBodySchema.parse(request.body)
 
-    return reply.status(201).send()
-  })
+      await knex('meals').where({ user_id, id }).first().delete()
+
+      return reply.status(201).send()
+    },
+  )
 }
